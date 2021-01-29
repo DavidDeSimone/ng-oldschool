@@ -63,15 +63,17 @@ const genericImpl = (func, firstArg, ...rest) => {
     Deno[func](...largs)
 	.then((returnval) => {
 	    if (returnval.rid === 0) {
-		returnval = returnval.rid;
+		returnval = 0;
 	    } else {
 		returnval = returnval.rid || returnval;
 	    }
-	    
-	    lisp.funcall(callback, returnval);
+
+	    if (callback) {
+		lisp.funcall(callback, returnval);
+	    }
 	})
 	.catch(e => {
-	    lisp.print(JSON.stringify(e));
+	    lisp.error(JSON.stringify(e));
 	});
 };
 
@@ -89,7 +91,9 @@ lisp.defun({
 	const buf = new Uint8Array(bytes);
 	Deno.read(rid, buf).then(() => {
 	    const text = new TextDecoder().decode(buf);
-	    lisp.funcall(callback, text);
+	    if (callback) {
+		lisp.funcall(callback, text);
+	    }
 	});
     }
 });
@@ -100,7 +104,9 @@ lisp.defun({
 	const encoder = new TextEncoder();
 	const data = encoder.encode(str);
 	Deno.write(rid, data).then((bytesWritten) => {
-	    lisp.funcall(callback, bytesWritten);
+	    if (callback) {
+		lisp.funcall(callback, bytesWritten);
+	    }
 	});
     },
 });
