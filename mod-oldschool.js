@@ -1,13 +1,17 @@
+const camelToKebab = (str) => {
+    return str.replace(/[A-Z]/g, "-$&").toLowerCase();
+};
+
 const methods = [
 "chdir",
 "chmod",
 "chown",
-//"close",
+"close",
 "connect",
 "connectTls",
 "copy",
 "copyFile",
-//"create",
+"create",
 "cwd",
 "execPath",
 //"exit",
@@ -21,7 +25,7 @@ const methods = [
 "makeTempFile",
 "metrics",
 "mkdir",
-//"open",
+"open",
 //"read",
 //"readAll",
 "readDir",
@@ -39,21 +43,77 @@ const methods = [
 //"test",
 //"test",
 "truncate",
-"watchFs",
+//"watchFs",
 //"write",
 //"writeAll",
 "writeFile",
 "writeTextFile"
 ];
 
+const genericImpl = (func, firstArg, ...rest) => {
+    let callback = null;
+    let largs = undefined;
+    if (rest.length === 0) {
+	callback = firstArg;
+    } else {
+	callback = rest.pop();
+	largs = [firstArg, ...rest];
+    }
+
+    Deno[func](...largs)
+	.then((returnval) => {
+	    if (returnval.rid === 0) {
+		returnval = returnval.rid;
+	    } else {
+		returnval = returnval.rid || returnval;
+	    }
+	    
+	    lisp.funcall(callback, returnval);
+	})
+	.catch(e => {
+	    lisp.print(JSON.stringify(e));
+	});
+};
 
 methods.forEach((func) => {
+    const name = camelToKebab(func);
     lisp.defun({
-	name: `oldschool-${func}`,
-	func: (callback, ...largs) => {
-	    Deno[func](...largs).then((...args) => {
-		lisp.funcall(callback, ...args);
-	    });
-	}
+	name: `oldschool-${name}`,
+	func: (firstArg, ...rest) => genericImpl(func, firstArg, ...rest),
     });
+});
+
+lisp.defun({
+    name: "oldschool-read",
+    func: (rid, bytes, callback) => {
+	const buf = new Uint8Array(bytes);
+	Deno.read(rid, buf).then(() => {
+	    const text = new TextDecoder().decode(buf);
+	    lisp.funcall(callback, text);
+	});
+    }
+});
+
+lisp.defun({
+    name: "oldschool-write",
+    func: (rid, str, callback) => {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(str);
+	Deno.write(rid, data).then((bytesWritten) => {
+	    lisp.funcall(callback, bytesWritten);
+	});
+    },
+});
+
+lisp.defun({
+    name: "oldschool-watch-fs",
+    func: (filename, callback) => {
+	const watcher = Deno.watchFs(filename);
+	const process = (event) => {
+	    lisp.funcall(callback, lisp.make.plist(event));
+	    return watcher.next().then(process);
+	};
+
+	watcher.next().then(process);
+    },
 });
