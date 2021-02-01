@@ -125,13 +125,37 @@ lisp.defun({
     },
 });
 
+const listeners = {};
+
 lisp.defun({
     name: "oldschool-listen",
-    docString: `(:port PORT :hostname ?HOSTNAME) Listens on
+    docString: `((:port PORT :hostname ?HOSTNAME)) Listens on
 a given port for incoming connections.`,
     func: (argObj, callback) => {
-	lisp.funcall(callback, Deno.listen(argObj.json()).rid);
+	const listener = Deno.listen(argObj.json());
+	const rid = listener.rid;
+	listeners[rid] = listener;
+	lisp.funcall(callback, rid);
     }
 });
 
-// @TODO write `oldschool-accept` which is based off the above rid`
+
+lisp.defun({
+    name: "oldschool-accept",
+    docString: `(RID) Accepts incoming connections for given listener. 
+Calls callback once per connection with RID of new connection`,
+    func: (rid, callback) => {
+	const process = (conn) => {
+	    lisp.funcall(callback, conn.rid);
+	    if (listeners[rid]) {
+		return listeners[rid].next().then(process);
+	    } else {
+		return Promise.resolve({done: true});
+	    }
+	};
+	
+	listeners[rid].next().then(process);
+    }
+});
+
+// @TODO write custom close to handle nulling out the listener object.
