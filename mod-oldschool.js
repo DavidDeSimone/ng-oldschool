@@ -3,22 +3,20 @@ const camelToKebab = (str) => {
 };
 
 const methods = [
-"chdir",
-"chmod",
-"chown",
-"close",
-"connect",
-"connectTls",
-"copy",
-"copyFile",
-"create",
-"cwd",
-"execPath",
-//"exit",
-"inspect",
-"isatty",
-//"iter",
-"listen",
+    { method: "chdir", docString: "(DIR) Changes current directory to DIR" },
+    { method: "chmod", docString: "(FILENAME MASK) Changes permissions for FILENAME to MASK"},
+    { method: "chown", docString: `(PATH UID GID) Changes file at path to be owned by
+given uid or gid` },
+    { method: "close", docString: "(RID) Closes a given resource" },
+    { method: "connect", docString: `((:port PORT :hostname ?HOSTNAME :transport ?TRANSPORT))
+Opens a connection via given connection method to hostname on port.
+Transport option can be tcp or udp. Returns Resource ID (RID)` },
+    { method: "connectTls", docString: `((:port PORT :hostname ?HOSTNAME :certFile ?CERTFILE))
+Opens a connection via a TLS connection to the hostname on a given port.
+Accepts a path to a cert file for the connection.` },
+    { method: "copyFile", docString: `(SRC DEST) Copies SRC file to DEST` },
+    { method: "create", docString: `(FILENAME) Creates FILENAME if it does not 
+exist, and returns Resource ID (RID) for file` },
 "listenTls",
 "lstat",
 "makeTempDir",
@@ -26,8 +24,6 @@ const methods = [
 "metrics",
 "mkdir",
 "open",
-//"read",
-//"readAll",
 "readDir",
 "readFile",
 "readLink",
@@ -38,28 +34,24 @@ const methods = [
 "resources",
 "run",
 "seek",
-//"shutdown",
 "stat",
-//"test",
-//"test",
 "truncate",
-//"watchFs",
-//"write",
-//"writeAll",
 "writeFile",
 "writeTextFile"
 ];
 
 const genericImpl = (func, firstArg, ...rest) => {
     let callback = null;
-    let largs = undefined;
+    let largs = [];
     if (rest.length === 0) {
 	callback = firstArg;
     } else {
 	callback = rest.pop();
+	rest = rest.map(a => a.json ? a.json() : a);
 	largs = [firstArg, ...rest];
     }
 
+    largs = largs.map(a => typeof a.json === 'function' ? a.json() : a);
     Deno[func](...largs)
 	.then((returnval) => {
 	    if (returnval.rid === 0) {
@@ -78,9 +70,18 @@ const genericImpl = (func, firstArg, ...rest) => {
 };
 
 methods.forEach((func) => {
-    const name = camelToKebab(func);
+    let name = null;
+    let docString = null;
+    if (typeof func === 'string') {
+	name = camelToKebab(func);
+    } else {
+	name = camelToKebab(func.method);
+	docString = func.docString;
+	func = func.method;
+    }
     lisp.defun({
 	name: `oldschool-${name}`,
+	docString,
 	func: (firstArg, ...rest) => genericImpl(func, firstArg, ...rest),
     });
 });
@@ -123,3 +124,14 @@ lisp.defun({
 	watcher.next().then(process);
     },
 });
+
+lisp.defun({
+    name: "oldschool-listen",
+    docString: `(:port PORT :hostname ?HOSTNAME) Listens on
+a given port for incoming connections.`,
+    func: (argObj, callback) => {
+	lisp.funcall(callback, Deno.listen(argObj.json()).rid);
+    }
+});
+
+// @TODO write `oldschool-accept` which is based off the above rid`
