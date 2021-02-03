@@ -99,6 +99,8 @@ methods.forEach((func) => {
 
 lisp.defun({
     name: "oldschool-read",
+    docString: `(RID NUMBYTES) Reads NUMBYTES from Resource ID (RID). RID is obtained from
+calling 'oldschool-open'. Will respect the data marker set by oldschool-seek`,
     func: (rid, bytes, callback) => {
 	const buf = new Uint8Array(bytes);
 	Deno.read(rid, buf).then(() => {
@@ -112,6 +114,8 @@ lisp.defun({
 
 lisp.defun({
     name: "oldschool-write",
+    docString: `(RID STRING) Writes STRING to Resource ID (RID). RID is obtained from calling
+'oldschool-open'.`,
     func: (rid, str, callback) => {
 	const encoder = new TextEncoder();
 	const data = encoder.encode(str);
@@ -125,6 +129,8 @@ lisp.defun({
 
 lisp.defun({
     name: "oldschool-watch-fs",
+    docString: `(FILE-OR-DIR) Opens a file watcher for a given directory or file. CALLBACK will 
+be invoked for all events on this file or directory.`,
     func: (filename, callback) => {
 	const watcher = Deno.watchFs(filename);
 	const process = (event) => {
@@ -266,4 +272,42 @@ Mode can either be :start :current or :end`,
 	    lisp.funcall(callback, num)
 	});
     }
+});
+
+lisp.defun({
+    name: "oldschool-fetch-json",
+    docString: `(URL DATA) fetchs URL with parameters according to 'fetch' API described in https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API DATA is a plist of properties layed out according to the proceeding document. As an example, in javascript you would use fetch(url, {method: 'GET'}). In oldschool, that would translate to (oldschool-fetch-json URL '(:method "GET") CALLBACK)
+
+Returns response as a plist deseralized from JSON`
+    func: (url, data, callback) => {
+	let input = undefined;
+	if (lisp.functionp(data)) {
+	    callback = data;
+	} else {
+	    input = data.json();
+	}
+
+	fetch(url, input)
+	    .then(response => response.json())
+	    .then(jsondata => lisp.funcall(callback, lisp.make.plist(jsondata)));
+    },
+});
+
+lisp.defun({
+    name: "oldschool-fetch-text",
+        docString: `(URL DATA) fetchs URL with parameters according to 'fetch' API described in https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API DATA is a plist of properties layed out according to the proceeding document. As an example, in javascript you would use fetch(url, {method: 'GET'}). In oldschool, that would translate to (oldschool-fetch-text URL '(:method "GET") CALLBACK)
+
+Returns response as text`
+    func: (url, data, callback) => {
+	let input = undefined;
+	if (lisp.functionp(data)) {
+	    callback = data;
+	} else {
+	    input = data.json();
+	}
+
+	fetch(url, input)
+	    .then(response => response.text())
+	    .then(textdata => lisp.funcall(callback, textdata))
+    },
 });

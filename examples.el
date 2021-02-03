@@ -13,6 +13,7 @@
 			      )
    ))
 
+;; Open and write to a file, and then read from it
 (oldschool-make-temp-file
  (lambda (filename)
    (oldschool-write-text-file filename "This is my Data!" (list :append t)
@@ -24,14 +25,21 @@
 			      )
    ))
 
+;; Set up a filewatcher 
 (oldschool-make-temp-dir (lambda (dir)
 			   (oldschool-watch-fs dir 'print)
 			   (oldschool-make-temp-file (list :dir dir :prefix "foo") 'print)
 			   ))
 
-
+;; Open a local server, and connect to it.
 (oldschool-listen '(:port 8085)
 		  (lambda (rid)
 		    (oldschool-accept rid (lambda (conn-rid)
 					    (print "Connected")))))
 (oldschool-connect '(:port 8085) (lambda (rid) (print "Hello")))
+
+;; fetch a url - receive JSON data back as a plist
+(oldschool-fetch-json "https://api.github.com/users/denoland" '(
+							       :method "GET"
+							       :redirect "manual"
+							       ) 'print)
