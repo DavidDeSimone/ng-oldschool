@@ -24,6 +24,6 @@ Further examples can be found in examples.el
 
 Include this line in your init.el to start using it:
 
-(eval-js "import 'https://deno.land/x/ng_oldschool@0.2.0/mod-oldschool.js'")
+(eval-js "import 'https://deno.land/x/ng_oldschool@0.3.0/mod-oldschool.js'")
 
 All credit to Deno for their API and examples.
