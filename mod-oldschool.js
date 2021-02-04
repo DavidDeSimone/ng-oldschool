@@ -278,7 +278,7 @@ lisp.defun({
     name: "oldschool-fetch-json",
     docString: `(URL DATA) fetchs URL with parameters according to 'fetch' API described in https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API DATA is a plist of properties layed out according to the proceeding document. As an example, in javascript you would use fetch(url, {method: 'GET'}). In oldschool, that would translate to (oldschool-fetch-json URL '(:method "GET") CALLBACK)
 
-Returns response as a plist deseralized from JSON`
+Returns response as a plist deseralized from JSON`,
     func: (url, data, callback) => {
 	let input = undefined;
 	if (lisp.functionp(data)) {
@@ -297,7 +297,7 @@ lisp.defun({
     name: "oldschool-fetch-text",
         docString: `(URL DATA) fetchs URL with parameters according to 'fetch' API described in https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API DATA is a plist of properties layed out according to the proceeding document. As an example, in javascript you would use fetch(url, {method: 'GET'}). In oldschool, that would translate to (oldschool-fetch-text URL '(:method "GET") CALLBACK)
 
-Returns response as text`
+Returns response as text`,
     func: (url, data, callback) => {
 	let input = undefined;
 	if (lisp.functionp(data)) {
